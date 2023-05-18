@@ -1,6 +1,7 @@
 import jax.random as random
 import jax.numpy as jnp
 import jax.nn as nn
+import jax
 
 # layer norm operator
 def normalize(x):
@@ -12,7 +13,9 @@ def normalize(x):
 def create_base(key, n_layers=3, n_input=100, n_hidden=128, n_output=10, n_state=5):
     key, subkey = random.split(key)
     h = random.normal(subkey, (n_input, n_state))
+    rw = random.normal(subkey, (n_input, n_output))
     ws = []
+    rws = [rw]
     hs = [h]
 
     for i in range(n_layers):
@@ -30,11 +33,16 @@ def create_base(key, n_layers=3, n_input=100, n_hidden=128, n_output=10, n_state
         w = random.normal(subkey, (n_out, n_in))
 
         key, subkey = random.split(key)
+        rw = random.normal(subkey, (n_out, n_output))
+
+        key, subkey = random.split(key)
         h = jnp.zeros((n_out, n_state))
+
         ws.append(w)
+        rws.append(rw)
         hs.append(h)
 
-    return {"w": ws, "h": hs}
+    return {"w": ws, "h": hs, "rw": rws}
 
 def init_mlp_architecture(key, n_layers=2, n_input=1, n_hidden=10, n_output=1):
     layers = []
@@ -129,31 +137,18 @@ def apply_forward_nem(meta, base, x):
 def update(meta, base, x, y):
     y_, last_act, forward_msgs = apply_forward_nem(meta, base, x)
     cur_backward_msg = jnp.zeros(last_act.shape)
-    cur_backward_msg = cur_backward_msg.at[y].set(jnp.ones(last_act.shape[-1]))
+    error_msg = cur_backward_msg.at[y].set(jnp.ones(last_act.shape[-1]))
 
     new_base = base
 
     # update inner states
-    for i in range(len(base["w"])):
-        j = len(base["w"]) - i - 1
-        cur_forward_msg = forward_msgs[j + 1]
-        update_input = jnp.concatenate(
-            [base["h"][j + 1], cur_forward_msg, cur_backward_msg], -1
-        )
-        new_base["h"][j + 1] = jnp.clip(
-            apply_meta_net(meta["update"], update_input), -1, 1
-        )
-        cur_backward_msg = normalize(jnp.matmul(jnp.transpose(base["w"][j]), cur_backward_msg))
-
-
-
-    update_input = jnp.concatenate(
-        [base["h"][0], forward_msgs[0], cur_backward_msg], -1
-    )
-    new_base["h"][0] = jnp.clip(apply_meta_net(meta["update"], update_input), -1, 1)
+    def backward_fn(fm, rw, h):
+        bm = normalize(jnp.matmul(rw, error_msg))
+        update_input = jnp.concatenate([fm, bm, h], -1)
+        return jnp.clip(apply_meta_net(meta["update"], update_input), -1, 1)
+    new_base["h"] = jax.tree_map(backward_fn, forward_msgs, base["rw"], base["h"])
 
     # update base weights
-
     for i, w in enumerate(base["w"]):
         prev_state = new_base["h"][i]
         next_state = new_base["h"][i + 1]
@@ -163,5 +158,6 @@ def update(meta, base, x, y):
         nxt = nxt / jnp.sqrt(jnp.expand_dims(jnp.sum(nxt**2, -1), -1) + 1e-10)
         dw = jnp.matmul(nxt, jnp.transpose(prv))
         new_base["w"][i] = jnp.clip((w + dw), -3, 3)
+
 
     return new_base

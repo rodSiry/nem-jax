@@ -1,12 +1,9 @@
 import jax
-import jax.nn as nn
 import jax.numpy as jnp
 import jax.random as random
 from loaders import SequenceGenerator
-from random import randint
-from utils import save_pickle, load_pickle, make_gif, filters_to_grids, filters_to_one_filter_grid
-from model import init_mlp_architecture, init_nem_architecture, apply_forward_nem, apply_meta_net, create_base, update
-from genetic import compute_novelty, half_clone_mutate
+from utils import load_pickle, make_gif, filters_to_grids
+from models.nem import apply_forward_nem, create_base, update
 import numpy as np
 
 def inner_test_episode(key, meta, x, y, x_test, y_test):
@@ -48,9 +45,10 @@ seq_len = 1000
 
 key, subkey = random.split(key, 2)
 
-#load population and select first individual
-meta = load_pickle('meta.pt')
+#load population and select best individual
+meta = load_pickle('meta_diversity.pt')
 meta = jax.tree_map(lambda x: x[500], meta)
+#meta = init_nem_architecture(key, 5, 5, 10)
 
 x, y = data.gen_sequence(dataset_list=datasets, seq_len=1000, correlation='ci')
 x, y = x.reshape(x.shape[0], -1), y.astype(int)
@@ -59,9 +57,9 @@ x_test, y_test = x_test.reshape(x.shape[0], -1), y_test.astype(int)
 
 key, subkey = random.split(key, 2)
 filters, score, gen_score = jax.jit(inner_test_episode)(subkey, meta, x, y, x_test, y_test)
-
-frames = filters_to_one_filter_grid(filters)
-make_gif('test.gif', np.array(256 * frames).astype(np.uint8))
+#frames = filters_to_one_filter_grid(filters)
+frames = filters_to_grids(filters)
+make_gif('test.gif', np.array(frames))
 
 print('score:', score, 'gen_score', gen_score)
 

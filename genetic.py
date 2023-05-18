@@ -3,6 +3,8 @@ import jax.numpy as jnp
 import jax
 def compute_novelty(meta, n_nearest=10):
     def dist_fn(t1, t2):
+        t1 = (t1 - t1.mean()) / (t1.std() + 1e-10)
+        t2 = (t2 - t2.mean()) / (t2.std() + 1e-10)
 
         t1 = jnp.reshape(t1, (t1.shape[0], -1))
         t2 = jnp.reshape(t2, (t2.shape[0], -1))
@@ -14,7 +16,8 @@ def compute_novelty(meta, n_nearest=10):
 
     dist_tree = jax.tree_map(dist_fn, meta, meta)
     res = jax.tree_util.tree_reduce(lambda x, y: x + y, dist_tree, 0)
-    return res.mean(-1)
+    res = jax.vmap(jnp.sort)(res)
+    return res[:, :n_nearest].mean(-1)
 
 
 def tree_of_keys(key, tree):
@@ -24,7 +27,7 @@ def tree_of_keys(key, tree):
 
 def gaussian_mutation(key, tree, eps=0.01):
     keys_tree = tree_of_keys(key, tree)
-    new_tree = jax.tree_map(lambda k, t: t + eps * random.normal(k, t.shape), keys_tree, tree)
+    new_tree = jax.tree_map(lambda k, t: jnp.clip(t + eps * random.normal(k, t.shape), -3, 3), keys_tree, tree)
     return new_tree
 
 def nonlocal_mutation(key, tree, eps=0.01):
@@ -36,7 +39,7 @@ def nonlocal_mutation(key, tree, eps=0.01):
     def map_function(k1, k2, t):
         n = random.normal(k1, t.shape)
         b = random.bernoulli(k2, 0.01, t.shape)
-        return b * n + (1 - b) * t
+        return jnp.clip(b * n + (1 - b) * t, -3, 3)
     new_tree = jax.tree_map(map_function, keys_tree_1, keys_tree_2, tree)
     return new_tree
 

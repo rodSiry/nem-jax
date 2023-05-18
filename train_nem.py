@@ -1,12 +1,11 @@
 import jax
-import jax.nn as nn
 import jax.numpy as jnp
 import jax.random as random
 from loaders import SequenceGenerator
 from random import randint
 from utils import save_pickle, load_pickle
-from model import init_mlp_architecture, init_nem_architecture, apply_forward_nem, apply_meta_net, create_base, update
-from genetic import compute_novelty, half_clone_mutate
+from models.nem_rfa import init_nem_architecture, apply_forward_nem, create_base, update
+from genetic import compute_novelty, half_clone_mutate, gaussian_mutation
 
 def get_remember_test_sequence(x, y):
     new_x = jnp.zeros(x.shape)
@@ -55,15 +54,17 @@ key = random.PRNGKey(0)
 key, subkey = random.split(key, 2)
 keys = random.split(subkey, 1000)
 meta = vmap_create_meta(keys, 5, 5, 10)
-meta = load_pickle('meta.pt')
+#meta = load_pickle('meta_gen.pt')
 logs = {'mean':[], 'max':[], 'diversity':[]}
 k = 0
 n_repeat = 1
 curriculum = [
-        #(10,   ['cifar10']),
-        #(30,   ['cifar10']),
-        #(100,  ['cifar10']),
-        (1000, ['cifar10', 'mnist', 'svhn'])]
+        (10,   ['cifar10']),
+        (30,   ['cifar10']),
+        (100,  ['cifar10']),
+        (1000, ['cifar10', 'mnist', 'svhn']),
+        (10000, ['cifar10', 'mnist', 'svhn']),
+]
 
 for cur_seq_len, datasets in curriculum:
     while True:
@@ -73,21 +74,22 @@ for cur_seq_len, datasets in curriculum:
             x, y = x.reshape(x.shape[0], -1), y.astype(int)
             x_test, y_test = data.gen_sequence(dataset_list=datasets, seq_len=cur_seq_len, correlation='iid')
             x_test, y_test = x_test.reshape(x_test.shape[0], -1), y_test.astype(int)
-            #x_test, y_test = get_remember_test_sequence(x, y)
+            #x_test, y_test = get_remember_test_sequence(x_test, y_test)
+            x_test, y_test = get_remember_test_sequence(x, y)
 
             key, subkey = random.split(key, 2)
             scores_, diversity = jax.jit(inner_episode)(subkey, meta, x, y, x_test, y_test)
             scores += scores_
         key, subkey = random.split(key, 2)
         scores = scores / n_repeat
-        meta = jax.jit(half_clone_mutate)(subkey, meta, scores)
+        meta = jax.jit(half_clone_mutate, static_argnums=[4])(subkey, meta, scores, mutation_fn=gaussian_mutation)
         logs['mean'].append(scores.mean())
         logs['max'].append(scores.max())
         logs['diversity'].append(diversity.mean())
         print(scores.mean(), scores.max(), diversity.mean())
         if k % 100 == 0:
             save_pickle(logs, 'logs.pt')
-            save_pickle(meta, 'meta_gen.pt')
+            save_pickle(meta, 'meta_dfa.pt')
 
         if scores.max() >= 0.9:
             print('----------------------------------------------------------------------')
