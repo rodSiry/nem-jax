@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 from utils.utils import load_pickle, convolve
 
-def plot(filename, N= 10):
+def plot(filename, N=10):
     data = load_pickle(filename)
     plt.subplot(1, 2, 1)
     plt.plot(convolve(data['mean'], N), label='mean')
@@ -12,5 +12,5 @@ def plot(filename, N= 10):
 
 
 
-plot('../logs.pt')
+plot('logs.pt')
 plt.show()

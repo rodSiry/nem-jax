@@ -5,19 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2f50bbcd-b2c2-49ad-b8f5-46d4cc46b3a1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/loaders/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.plot.py.swp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/genetic.py" beforeDir="false" afterPath="$PROJECT_DIR$/genetic/genetic.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/loaders.py" beforeDir="false" afterPath="$PROJECT_DIR$/loaders/sequence_generator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/synapse_ur.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/nem.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/nem.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/nem_rfa.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/nem_rfa.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plot.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/plot.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_nem.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/test_nem.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/plot.py" beforeDir="false" afterPath="$PROJECT_DIR$/plot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test_nem.py" beforeDir="false" afterPath="$PROJECT_DIR$/test_nem.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/train_nem.py" beforeDir="false" afterPath="$PROJECT_DIR$/train_nem.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/train_synapse.py" beforeDir="false" afterPath="$PROJECT_DIR$/train_synapse.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

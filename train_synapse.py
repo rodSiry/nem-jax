@@ -23,7 +23,7 @@ def inner_episode(key, update_rule, meta, x, y, x_test, y_test):
 
     key, subkey = random.split(key, 2)
     keys = random.split(subkey, 1000)
-    base = vmap_create_base(keys, 3, 256, 128, 10, 5)
+    base = vmap_create_base(keys, 3, 256, 128, 10, 3)
 
     def inner_step(acc, input_data):
         x = input_data['x']
@@ -45,7 +45,7 @@ def inner_episode(key, update_rule, meta, x, y, x_test, y_test):
 
 update_rule = SynapseUpdateRule()
 
-vmap_create_meta = jax.vmap(update_rule.create_meta, in_axes=[0, None, None, None])
+vmap_create_meta = jax.vmap(update_rule.create_meta, in_axes=[0, None])
 
 data = SequenceGenerator()
 
@@ -54,7 +54,7 @@ key = random.PRNGKey(0)
 
 key, subkey = random.split(key, 2)
 keys = random.split(subkey, 1000)
-meta = vmap_create_meta(keys, 5, 5, 10)
+meta = vmap_create_meta(keys, 3)
 #meta = load_pickle('meta_gen.pt')
 logs = {'mean':[], 'max':[], 'diversity':[]}
 k = 0
@@ -71,9 +71,9 @@ for cur_seq_len, datasets in curriculum:
     while True:
         scores = 0
         for _ in range(n_repeat):
-            x, y = data.gen_sequence(dataset_list=datasets, seq_len=cur_seq_len, correlation='ci')
+            x, y = data.gen_sequence(dataset_list=datasets, seq_len=cur_seq_len, correlation='ci', fold='train')
             x, y = x.reshape(x.shape[0], -1), y.astype(int)
-            x_test, y_test = data.gen_sequence(dataset_list=datasets, seq_len=cur_seq_len, correlation='iid')
+            x_test, y_test = data.gen_sequence(dataset_list=datasets, seq_len=cur_seq_len, correlation='iid', fold='test')
             x_test, y_test = x_test.reshape(x_test.shape[0], -1), y_test.astype(int)
             #x_test, y_test = get_remember_test_sequence(x_test, y_test)
             x_test, y_test = get_remember_test_sequence(x, y)

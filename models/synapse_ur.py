@@ -16,7 +16,7 @@ class SynapseUpdateRule():
             in_ = n_in if i==0 else n_hidden
             out_ = n_out if i == n_layers -1 else n_hidden
             subkey, key = random.split(key)
-            h.append(random.normal(subkey, (in_, out_, n_state)))
+            h.append(random.normal(subkey, (out_, in_, n_state)))
 
             subkey, key = random.split(key)
             if i<n_layers - 1:
@@ -70,7 +70,7 @@ class SynapseUpdateRule():
         for i,h in enumerate(base['h']):
             prev_act.append(y)
             w = self._apply_meta_net(meta['to_w'], h).squeeze(-1)
-            y = jnp.matmul(y, w) / jnp.sqrt(w.shape[0])
+            y = jnp.matmul(w, y) / jnp.sqrt(w.shape[1])
             next_act.append(y)
             if i < len(base['h']) - 1:
                 y = nn.relu(y)

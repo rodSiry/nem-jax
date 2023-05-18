@@ -3,12 +3,12 @@ import jax.numpy as jnp
 import jax.random as random
 from loaders.sequence_generator import SequenceGenerator
 from random import randint
-from utils.utils import save_pickle
+from utils.utils import save_pickle, load_pickle
 from models.synapse_ur import SynapseUpdateRule
 from models.nem import NEMUpdateRule
 from models.nem_rfa import NEMRFAUpdateRule
 from models.nem_dfa import NEMDFAUpdateRule
-from genetic.genetic import compute_novelty, half_clone_mutate, gaussian_mutation
+from genetic.genetic import compute_novelty, half_clone_mutate, gaussian_mutation, nonlocal_mutation
 
 def get_remember_test_sequence(x, y):
     new_x = jnp.zeros(x.shape)
@@ -46,7 +46,7 @@ def inner_episode(key, update_rule, meta, x, y, x_test, y_test):
     return scores, diversity
 
 
-update_rule = NEMRFAUpdateRule()
+update_rule = NEMUpdateRule()
 
 vmap_create_meta = jax.vmap(update_rule.create_meta, in_axes=[0, None, None, None])
 
@@ -58,42 +58,42 @@ key = random.PRNGKey(0)
 key, subkey = random.split(key, 2)
 keys = random.split(subkey, 1000)
 meta = vmap_create_meta(keys, 5, 5, 10)
-#meta = load_pickle('meta_gen.pt')
+meta = load_pickle('meta_gen_5000.pt')
 logs = {'mean':[], 'max':[], 'diversity':[]}
 k = 0
 n_repeat = 1
 curriculum = [
-        (10,   ['cifar10']),
-        (30,   ['cifar10']),
-        (100,  ['cifar10']),
-        (1000, ['cifar10', 'mnist', 'svhn']),
-        (10000, ['cifar10', 'mnist', 'svhn']),
+        #(10,   ['cifar10']),
+        #(30,   ['cifar10']),
+        #(100,  ['cifar10']),
+        #(1000, ['cifar10', 'mnist', 'svhn']),
+        (5000, ['cifar10', 'mnist', 'svhn']),
 ]
 
 for cur_seq_len, datasets in curriculum:
     while True:
         scores = 0
         for _ in range(n_repeat):
-            x, y = data.gen_sequence(dataset_list=datasets, seq_len=cur_seq_len, correlation='ci')
+            x, y = data.gen_sequence(dataset_list=datasets, seq_len=cur_seq_len, correlation='ci', fold='train')
             x, y = x.reshape(x.shape[0], -1), y.astype(int)
-            x_test, y_test = data.gen_sequence(dataset_list=datasets, seq_len=cur_seq_len, correlation='iid')
+            x_test, y_test = data.gen_sequence(dataset_list=datasets, seq_len=cur_seq_len, correlation='iid', fold='test')
             x_test, y_test = x_test.reshape(x_test.shape[0], -1), y_test.astype(int)
             #x_test, y_test = get_remember_test_sequence(x_test, y_test)
-            x_test, y_test = get_remember_test_sequence(x, y)
+            #x_test, y_test = get_remember_test_sequence(x, y)
 
             key, subkey = random.split(key, 2)
             scores_, diversity = jax.jit(inner_episode, static_argnums=[1])(subkey, update_rule, meta, x, y, x_test, y_test)
             scores += scores_
         key, subkey = random.split(key, 2)
         scores = scores / n_repeat
-        meta = jax.jit(half_clone_mutate, static_argnums=[4])(subkey, meta, scores, mutation_fn=gaussian_mutation)
+        meta = jax.jit(half_clone_mutate, static_argnums=[4])(subkey, meta, scores, mutation_fn=nonlocal_mutation)
         logs['mean'].append(scores.mean())
         logs['max'].append(scores.max())
         logs['diversity'].append(diversity.mean())
         print(scores.mean(), scores.max(), diversity.mean())
         if k % 100 == 0:
             save_pickle(logs, 'logs.pt')
-            save_pickle(meta, 'meta_dfa.pt')
+            save_pickle(meta, 'meta_gen_5000.pt')
 
         if scores.max() >= 0.9:
             print('----------------------------------------------------------------------')
