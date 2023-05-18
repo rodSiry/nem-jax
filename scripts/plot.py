@@ -1,5 +1,5 @@
 from matplotlib import pyplot as plt
-from utils import load_pickle, convolve
+from utils.utils import load_pickle, convolve
 
 def plot(filename, N= 10):
     data = load_pickle(filename)
@@ -12,5 +12,5 @@ def plot(filename, N= 10):
 
 
 
-plot('logs.pt')
+plot('../logs.pt')
 plt.show()

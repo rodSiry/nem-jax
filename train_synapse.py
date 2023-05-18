@@ -5,9 +5,6 @@ from loaders.sequence_generator import SequenceGenerator
 from random import randint
 from utils.utils import save_pickle
 from models.synapse_ur import SynapseUpdateRule
-from models.nem import NEMUpdateRule
-from models.nem_rfa import NEMRFAUpdateRule
-from models.nem_dfa import NEMDFAUpdateRule
 from genetic.genetic import compute_novelty, half_clone_mutate, gaussian_mutation
 
 def get_remember_test_sequence(x, y):
@@ -46,7 +43,7 @@ def inner_episode(key, update_rule, meta, x, y, x_test, y_test):
     return scores, diversity
 
 
-update_rule = NEMRFAUpdateRule()
+update_rule = SynapseUpdateRule()
 
 vmap_create_meta = jax.vmap(update_rule.create_meta, in_axes=[0, None, None, None])
 
