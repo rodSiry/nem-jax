@@ -71,9 +71,10 @@ for cur_seq_len, datasets in curriculum:
         for _ in range(n_repeat):
             x, y = data.gen_sequence(dataset_list=datasets, seq_len=cur_seq_len, correlation='ci')
             x, y = x.reshape(x.shape[0], -1), y.astype(int)
-            #x_test, y_test = data.gen_sequence(dataset_list=['mnist'], seq_len=100, correlation='iid')
-            #x_test, y_test = x_test.reshape(x_test.shape[0], -1), y_test.astype(int)
-            x_test, y_test = get_remember_test_sequence(x, y)
+            x_test, y_test = data.gen_sequence(dataset_list=datasets, seq_len=cur_seq_len, correlation='iid')
+            x_test, y_test = x_test.reshape(x_test.shape[0], -1), y_test.astype(int)
+            #x_test, y_test = get_remember_test_sequence(x, y)
+
             key, subkey = random.split(key, 2)
             scores_, diversity = jax.jit(inner_episode)(subkey, meta, x, y, x_test, y_test)
             scores += scores_
@@ -86,7 +87,7 @@ for cur_seq_len, datasets in curriculum:
         print(scores.mean(), scores.max(), diversity.mean())
         if k % 100 == 0:
             save_pickle(logs, 'logs.pt')
-            save_pickle(meta, 'meta.pt')
+            save_pickle(meta, 'meta_gen.pt')
 
         if scores.max() >= 0.9:
             print('----------------------------------------------------------------------')
